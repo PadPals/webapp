@@ -1,0 +1,7 @@
+{
+  "name": "PadPals",
+  "description": "A minimalist, warm-toned web application for sanitary pad ordering and period tracking, featuring order predictions and subscription management.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
