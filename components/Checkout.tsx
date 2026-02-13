@@ -16,7 +16,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, userProfile, onUpdateProfile
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const total = subtotal + 35;
 
-  const deductionDays = Array.from({length: 31}, (_, i) => {
+  const deductionDays = Array.from({ length: 31 }, (_, i) => {
     const day = i + 1;
     let suffix = 'th';
     if (day === 1 || day === 21 || day === 31) suffix = 'st';
@@ -59,7 +59,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, userProfile, onUpdateProfile
             <h2 className="text-4xl font-black text-rose-950 tracking-tighter">Checkout</h2>
             <p className="text-sm font-medium text-gray-500 italic font-['Playfair_Display']">Just a few details to get your care package on its way.</p>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Profile / Delivery Info Section */}
             <div className="glass-card p-10 rounded-[2.5rem] space-y-8">
@@ -72,24 +72,24 @@ const Checkout: React.FC<CheckoutProps> = ({ items, userProfile, onUpdateProfile
                 {/* Basic Info */}
                 <div className="space-y-2 group">
                   <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Full Name</label>
-                  <input 
-                    required 
-                    type="text" 
+                  <input
+                    required
+                    type="text"
                     value={userProfile.name}
                     onChange={(e) => onUpdateProfile({ name: e.target.value })}
-                    placeholder="Jane Doe" 
-                    className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-white/60 focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none transition-all font-medium" 
+                    placeholder="Jane Doe"
+                    className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-white/60 focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none transition-all font-medium"
                   />
                 </div>
                 <div className="space-y-2 group">
                   <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Age</label>
-                  <input 
-                    required 
-                    type="number" 
+                  <input
+                    required
+                    type="number"
                     value={userProfile.age}
                     onChange={(e) => onUpdateProfile({ age: e.target.value })}
-                    placeholder="e.g. 21" 
-                    className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-white/60 focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none transition-all font-medium" 
+                    placeholder="e.g. 21"
+                    className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-white/60 focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none transition-all font-medium"
                   />
                 </div>
 
@@ -97,14 +97,14 @@ const Checkout: React.FC<CheckoutProps> = ({ items, userProfile, onUpdateProfile
                 <div className="space-y-2 group md:col-span-2">
                   <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">I am a...</label>
                   <div className="flex bg-white/40 p-1 rounded-2xl border border-white/60 h-14">
-                    <button 
+                    <button
                       type="button"
                       onClick={() => onUpdateProfile({ isStudent: true })}
                       className={`flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${userProfile.isStudent ? 'bg-rose-500 text-white shadow-md' : 'text-gray-400 hover:text-rose-400'}`}
                     >
                       Student Pal
                     </button>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => onUpdateProfile({ isStudent: false })}
                       className={`flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${!userProfile.isStudent ? 'bg-rose-500 text-white shadow-md' : 'text-gray-400 hover:text-rose-400'}`}
@@ -119,7 +119,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, userProfile, onUpdateProfile
                   <div className="space-y-2 group md:col-span-2">
                     <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">University</label>
                     <div className="relative">
-                      <select 
+                      <select
                         required
                         value={userProfile.university}
                         onChange={(e) => onUpdateProfile({ university: e.target.value })}
@@ -138,13 +138,13 @@ const Checkout: React.FC<CheckoutProps> = ({ items, userProfile, onUpdateProfile
                 ) : (
                   <div className="space-y-2 group md:col-span-2">
                     <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Residential Address</label>
-                    <input 
-                      required 
-                      type="text" 
+                    <input
+                      required
+                      type="text"
                       value={userProfile.address}
                       onChange={(e) => onUpdateProfile({ address: e.target.value })}
-                      placeholder="Street, Suburb, etc." 
-                      className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-white/60 focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none transition-all font-medium" 
+                      placeholder="Street, Suburb, etc."
+                      className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-white/60 focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none transition-all font-medium"
                     />
                   </div>
                 )}
@@ -152,7 +152,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, userProfile, onUpdateProfile
                 <div className="space-y-2 group">
                   <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Town / City</label>
                   <div className="relative">
-                    <select 
+                    <select
                       required
                       value={userProfile.town}
                       onChange={(e) => onUpdateProfile({ town: e.target.value })}
@@ -173,7 +173,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, userProfile, onUpdateProfile
                 <div className="space-y-2 group">
                   <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Automated Deduction Date (Optional)</label>
                   <div className="relative">
-                    <select 
+                    <select
                       value={userProfile.preferredDeductionDate}
                       onChange={(e) => onUpdateProfile({ preferredDeductionDate: e.target.value })}
                       className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-white/60 focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none transition-all font-medium appearance-none pr-10"
@@ -222,7 +222,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, userProfile, onUpdateProfile
               {items.map(item => (
                 <div key={`${item.variantId}-${item.isSubscription}`} className="flex gap-4 items-center">
                   <div className="w-14 h-14 rounded-xl overflow-hidden glass-card shrink-0 border border-white/40 shadow-sm">
-                    <img src={item.image} className="w-full h-full object-cover" />
+                    <img src={item.image.startsWith('/images') ? `${import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:3000'}${item.image}` : item.image} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-grow">
                     <p className="font-bold text-xs text-rose-950">{item.name}</p>

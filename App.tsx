@@ -6,7 +6,10 @@ import PeriodTracker from './components/PeriodTracker';
 import Cart from './components/Cart';
 import Checkout from './components/Checkout';
 import AdminPanel from './components/AdminPanel';
+import AdminApply from './components/AdminApply';
+import SuperAdminPanel from './components/SuperAdminPanel';
 import Login from './components/Login';
+import Profile from './components/Profile';
 import { View, Product, ProductVariant, CartItem, Subscription, UserProfile } from './types';
 import { INITIAL_PRODUCTS, SOUTH_AFRICAN_UNIVERSITIES, PAD_SIZES, SOUTH_AFRICAN_TOWNS } from './constants';
 import { GoogleGenAI } from "@google/genai";
@@ -108,6 +111,7 @@ const GUEST_PROFILE: UserProfile = {
   name: '',
   email: '',
   isAdmin: false,
+  isSuperAdmin: false,
   age: '',
   town: '',
   country: 'South Africa',
@@ -128,7 +132,6 @@ const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [elevateSecret, setElevateSecret] = useState('');
 
   useEffect(() => {
     fetchProducts();
@@ -138,6 +141,7 @@ const App: React.FC = () => {
       setUserProfile({
         ...user,
         isAdmin: !!user.isAdmin,
+        isSuperAdmin: !!user.isSuperAdmin,
         age: '', town: '', country: 'South Africa',
         isStudent: true, university: '', address: '', padSize: 'Regular',
         preferredDeductionDate: '', subscriptionActive: true, orderHistory: [], subscriptions: []
@@ -157,6 +161,7 @@ const App: React.FC = () => {
         if (!grouped[item.group_id]) {
           grouped[item.group_id] = {
             id: item.group_id,
+            group_id: item.group_id,
             name: item.name,
             description: item.description,
             category: item.category,
@@ -200,6 +205,12 @@ const App: React.FC = () => {
       if (e.detail) setCurrentView(e.detail as View);
     };
     window.addEventListener('setView', handleSetView);
+
+    // Check URL for admin request
+    if (window.location.pathname === '/admin/request') {
+      setCurrentView(View.ADMIN_APPLY);
+    }
+
     return () => window.removeEventListener('setView', handleSetView);
   }, []);
 
@@ -234,15 +245,12 @@ const App: React.FC = () => {
     setUserProfile({
       ...user,
       isAdmin: !!user.isAdmin,
+      isSuperAdmin: !!user.isSuperAdmin,
       age: '', town: '', country: 'South Africa',
       isStudent: true, university: '', address: '', padSize: 'Regular',
       preferredDeductionDate: '', subscriptionActive: true, orderHistory: [], subscriptions: []
     });
     fetchUserData(user.id);
-    // Auto-redirect admins to the Admin view
-    if (!!user.isAdmin) {
-      setCurrentView(View.ADMIN);
-    }
   };
 
   const handleUpdateProduct = async (product: Product) => {
@@ -307,17 +315,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleElevateToAdmin = async () => {
-    if (!userProfile?.id || !elevateSecret) return;
-    try {
-      await axios.post(`${API_BASE_URL}/auth/elevate`, { userId: userProfile.id, secretCode: elevateSecret });
-      setUserProfile(prev => prev ? { ...prev, isAdmin: true } : null);
-      setElevateSecret('');
-      alert('Congratulations! You are now an Admin.');
-    } catch (error) {
-      alert('Invalid secret code.');
-    }
-  };
+
 
   const renderView = () => {
     if (loading && currentView === View.SHOP) {
@@ -353,17 +351,35 @@ const App: React.FC = () => {
               onUpdateProfile={(u) => setUserProfile(p => p ? { ...p, ...u } : { ...GUEST_PROFILE, ...u })}
               subscriptions={subscriptions}
               onUpdateSubscription={(id, s) => setSubscriptions(prev => prev.map(sub => sub.id === id ? { ...sub, status: s } : sub))}
-              onAdminClick={() => setCurrentView(View.ADMIN)}
-              elevateSecret={elevateSecret}
-              onElevateSecretChange={setElevateSecret}
-              onElevate={handleElevateToAdmin}
-              isGuest={!userProfile}
+              onAdminClick={() => setCurrentView(userProfile?.isSuperAdmin ? View.SUPER_ADMIN : View.ADMIN)}
+              isGuest={!userProfile || userProfile.id === 'guest'}
               onLogin={(user) => handleLogin(user)}
             />
           </div>
         );
       case View.ADMIN:
         return <div className="pt-8 pb-20 animate-reveal"><AdminPanel products={products} onUpdateProduct={handleUpdateProduct} onAddProduct={handleAddProduct} /></div>;
+      case View.ADMIN_APPLY:
+        return (
+          <div className="pt-8 pb-20 animate-reveal">
+            <AdminApply
+              userId={userProfile?.id || null}
+              userName={userProfile?.name || ''}
+              onBack={() => setCurrentView(View.PROFILE)}
+            />
+          </div>
+        );
+      case View.SUPER_ADMIN:
+        return (
+          <div className="pt-8 pb-20 animate-reveal">
+            <SuperAdminPanel
+              userId={userProfile?.id || ''}
+              products={products}
+              onUpdateProduct={handleUpdateProduct}
+              onAddProduct={handleAddProduct}
+            />
+          </div>
+        );
       default:
         return <Hero setView={setCurrentView} />;
     }
@@ -466,7 +482,7 @@ const Hero: React.FC<{ setView: (v: View) => void }> = ({ setView }) => (
         <div className="absolute inset-0 bg-rose-400 rounded-[6rem] blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity"></div>
         <div className="relative glass-card p-6 rounded-[6rem] rotate-1 group-hover:rotate-0 transition-transform duration-1000">
           <img
-            src="https://images.unsplash.com/photo-1598449356475-b9f71ef7d847?auto=format&fit=crop&q=80&w=1200"
+            src="images/pexels-alialcantara-12319186.jpg"
             alt="Wellness Essentials"
             className="w-full aspect-[4/5] object-cover rounded-[5rem] shadow-2xl brightness-105"
           />
@@ -612,249 +628,5 @@ const AboutUsSection: React.FC = () => (
   </section>
 );
 
-const Profile: React.FC<{
-  userProfile: UserProfile,
-  onUpdateProfile: (updates: Partial<UserProfile>) => void,
-  subscriptions: Subscription[],
-  onUpdateSubscription: (id: string, status: Subscription['status']) => void,
-  onAdminClick: () => void,
-  elevateSecret: string,
-  onElevateSecretChange: (s: string) => void,
-  onElevate: () => void,
-  isGuest: boolean,
-  onLogin: (user: any) => void
-}> = ({ userProfile, onUpdateProfile, subscriptions, onUpdateSubscription, onAdminClick, elevateSecret, onElevateSecretChange, onElevate, isGuest, onLogin }) => {
-  const [showLogin, setShowLogin] = useState(false);
-  const initials = userProfile.name ? userProfile.name.split(' ').map(n => n[0]).join('').toUpperCase() : '?';
-  const deductionDays = Array.from({ length: 31 }, (_, i) => {
-    const day = i + 1;
-    let suffix = 'th';
-    if (day === 1 || day === 21 || day === 31) suffix = 'st';
-    else if (day === 2 || day === 22) suffix = 'nd';
-    else if (day === 3 || day === 23) suffix = 'rd';
-    return `${day}${suffix}`;
-  });
-
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-12 space-y-16 animate-reveal">
-      {/* Registration Focused Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div className="space-y-6 text-center md:text-left">
-          <h2 className="text-5xl md:text-7xl font-black text-rose-950 tracking-tighter leading-tight font-['Playfair_Display'] italic">
-            {isGuest ? 'Join the Palhood,' : `Hey pal,`} <br />
-            <span className="text-rose-500 font-sans not-italic">{isGuest ? 'get started today' : 'please confirm your info'}</span>
-          </h2>
-          <p className="text-xl text-rose-900/40 font-medium max-w-2xl">This helps us customize your deliveries and health tracking for a perfect experience.</p>
-        </div>
-        {isGuest && (
-          <button
-            onClick={() => setShowLogin(!showLogin)}
-            className="px-8 py-4 bg-rose-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-800 transition-all shadow-xl"
-          >
-            {showLogin ? 'Back to Form' : 'Existing Pal? Login'}
-          </button>
-        )}
-      </div>
-
-      {isGuest && showLogin ? (
-        <div className="animate-reveal">
-          <Login onLogin={(u) => { setShowLogin(false); onLogin(u); }} />
-        </div>
-      ) : (
-        <div className="grid lg:grid-cols-12 gap-12 items-start">
-          {/* Registration Form - Primary Content */}
-          <div className="lg:col-span-8">
-            <div className="glass-card rounded-[4rem] p-8 md:p-12 shadow-2xl border-rose-100/40">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Full Name</label>
-                  <input
-                    value={userProfile.name}
-                    onChange={(e) => onUpdateProfile({ name: e.target.value })}
-                    placeholder="Your name"
-                    className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-rose-50 focus:ring-4 focus:ring-rose-500/10 outline-none font-bold text-rose-950 placeholder:text-rose-200"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Age</label>
-                  <input
-                    type="number"
-                    value={userProfile.age}
-                    onChange={(e) => onUpdateProfile({ age: e.target.value })}
-                    placeholder="e.g. 21"
-                    className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-rose-50 focus:ring-4 focus:ring-rose-500/10 outline-none font-bold text-rose-950 placeholder:text-rose-200"
-                  />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Account Type</label>
-                  <div className="flex bg-rose-50 p-1 rounded-2xl border border-rose-100">
-                    <button
-                      onClick={() => onUpdateProfile({ isStudent: true })}
-                      className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${userProfile.isStudent ? 'bg-rose-500 text-white shadow-md' : 'text-rose-400 hover:text-rose-600'}`}
-                    >
-                      Student Pal
-                    </button>
-                    <button
-                      onClick={() => onUpdateProfile({ isStudent: false })}
-                      className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!userProfile.isStudent ? 'bg-rose-500 text-white shadow-md' : 'text-rose-400 hover:text-rose-600'}`}
-                    >
-                      Everyday Pal
-                    </button>
-                  </div>
-                </div>
-
-                {userProfile.isStudent ? (
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">University</label>
-                    <select
-                      value={userProfile.university}
-                      onChange={(e) => onUpdateProfile({ university: e.target.value })}
-                      className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-rose-50 focus:ring-4 focus:ring-rose-500/10 outline-none font-bold text-rose-950 appearance-none bg-no-repeat bg-[right_1.5rem_center]"
-                    >
-                      <option value="">Select University</option>
-                      {SOUTH_AFRICAN_UNIVERSITIES.map(uni => <option key={uni} value={uni}>{uni}</option>)}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Delivery Address</label>
-                    <input
-                      value={userProfile.address}
-                      onChange={(e) => onUpdateProfile({ address: e.target.value })}
-                      placeholder="Street, Suburb, etc."
-                      className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-rose-50 focus:ring-4 focus:ring-rose-500/10 outline-none font-bold text-rose-950 placeholder:text-rose-200"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Town / City</label>
-                  <select
-                    value={userProfile.town}
-                    onChange={(e) => onUpdateProfile({ town: e.target.value })}
-                    className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-rose-50 focus:ring-4 focus:ring-rose-500/10 outline-none font-bold text-rose-950"
-                  >
-                    <option value="">Select Town</option>
-                    {SOUTH_AFRICAN_TOWNS.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest ml-1">Deduction Date</label>
-                  <select
-                    value={userProfile.preferredDeductionDate}
-                    onChange={(e) => onUpdateProfile({ preferredDeductionDate: e.target.value })}
-                    className="w-full px-6 py-4 rounded-2xl bg-white/40 border border-rose-50 focus:ring-4 focus:ring-rose-500/10 outline-none font-bold text-rose-950"
-                  >
-                    <option value="">Manual Orders Only</option>
-                    {deductionDays.map(d => <option key={d} value={d}>Every {d} of month</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="mt-12 flex flex-col md:flex-row gap-4 items-center">
-                <button className="w-full md:w-auto px-12 py-6 glass-button-primary text-white rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-2xl">Save Information</button>
-                {userProfile.isAdmin && (
-                  <button onClick={onAdminClick} className="text-[10px] font-black text-rose-300 uppercase tracking-widest hover:text-rose-500 p-4">Administrative Access</button>
-                )}
-              </div>
-              {!userProfile.isAdmin && (
-                <div className="mt-8 pt-8 border-t border-rose-50/50">
-                  <label className="text-[10px] font-black text-rose-300 uppercase tracking-widest ml-1">Admin Elevation Code</label>
-                  <div className="flex gap-2 mt-2">
-                    <input
-                      type="password"
-                      value={elevateSecret}
-                      onChange={(e) => onElevateSecretChange(e.target.value)}
-                      placeholder="Enter secret code"
-                      className="flex-grow px-6 py-4 rounded-2xl bg-white/40 border border-rose-50 focus:ring-4 focus:ring-rose-500/10 outline-none font-bold text-rose-950 placeholder:text-rose-200"
-                    />
-                    <button
-                      onClick={onElevate}
-                      className="px-8 py-4 bg-rose-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-800 transition-all"
-                    >
-                      Elevate
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Secondary Info - Account Summary */}
-          <div className="lg:col-span-4 space-y-8">
-            <div className="glass-card rounded-[4rem] p-10 shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-8 opacity-5 text-rose-500 group-hover:scale-125 transition-transform duration-700">
-                <i className="fas fa-heart text-9xl"></i>
-              </div>
-              <div className="w-20 h-20 bg-rose-500 rounded-[2.2rem] flex items-center justify-center text-white text-3xl font-black mb-10 shadow-xl rotate-3">
-                {initials}
-              </div>
-              <h3 className="text-2xl font-black text-rose-950 mb-2">{userProfile.name || 'Pal Candidate'}</h3>
-              <p className="text-xs font-black text-rose-400 uppercase tracking-widest mb-10">{isGuest ? 'Guest Account' : 'Account Verified'}</p>
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-4 border-b border-rose-50">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Rewards</span>
-                  <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Bronze Tier</span>
-                </div>
-                <div className="flex justify-between items-center py-4">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subs</span>
-                  <span className="text-[10px] font-black text-rose-950 uppercase tracking-widest">{subscriptions.length} Active</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-rose-950 p-10 rounded-[4rem] shadow-2xl relative overflow-hidden group border border-rose-900">
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-rose-500/20 rounded-full blur-3xl"></div>
-              <h4 className="text-white text-lg font-black mb-6 leading-tight">Pal Points <br /><span className="text-rose-400">Total: 450</span></h4>
-              <div className="w-full bg-white/10 h-1.5 rounded-full mb-4">
-                <div className="w-1/3 h-full bg-rose-500 rounded-full"></div>
-              </div>
-              <p className="text-[9px] font-bold text-rose-100/30 uppercase tracking-widest">500 more for next reward</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Subscriptions Section - Always visible below registration */}
-      {subscriptions.length > 0 && (
-        <div className="space-y-12 pt-8">
-          <div className="flex items-center justify-between">
-            <h3 className="text-4xl font-black text-rose-950 tracking-tighter italic font-['Playfair_Display']">Your <span className="font-sans not-italic">Subscriptions</span></h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {subscriptions.map(sub => (
-              <div key={sub.id} className="glass-card p-10 rounded-[4rem] hover:scale-[1.02] transition-all duration-500 border-rose-100 group">
-                <div className="flex justify-between items-start mb-10">
-                  <div className="w-16 h-16 rounded-3xl bg-rose-500 text-white flex items-center justify-center shadow-xl rotate-3 group-hover:rotate-0 transition-all">
-                    <i className="fas fa-box-open text-2xl"></i>
-                  </div>
-                  <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${sub.status === 'Active' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-gray-100 text-gray-400 border-gray-200'
-                    }`}>{sub.status}</span>
-                </div>
-                <h4 className="text-3xl font-black text-rose-950 mb-2 leading-none">{sub.productName}</h4>
-                <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-10">{sub.selectedSize} • {sub.frequency}</p>
-                <div className="bg-white/40 p-8 rounded-[2.5rem] border border-white/60 mb-10 space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Next Ship</span>
-                    <span className="text-sm font-black text-rose-950">{sub.nextDelivery}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Rate</span>
-                    <span className="text-sm font-black text-rose-500">R {sub.price.toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <button className="flex-grow py-4 bg-rose-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-800 transition-all">Track Logistics</button>
-                  <button onClick={() => onUpdateSubscription(sub.id, sub.status === 'Active' ? 'Paused' : 'Active')} className="px-8 py-4 glass-card rounded-2xl text-[10px] font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50">{sub.status === 'Active' ? 'Pause' : 'Resume'}</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default App;

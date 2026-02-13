@@ -8,6 +8,8 @@ interface ProductCatalogueProps {
   onAddToCart: (product: Product, variant: ProductVariant, isSubscription: boolean) => void;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
 const BrandedImage: React.FC<{ productName: string, prompt: string, alt: string }> = ({ productName, prompt, alt }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,7 +21,10 @@ const BrandedImage: React.FC<{ productName: string, prompt: string, alt: string 
 
       // 1. Check if prompt is already a local path (from DB / Admin Panel)
       if (prompt && prompt.startsWith('/images')) {
-        setImageUrl(prompt);
+        // API_BASE_URL usually includes /api, but images are at root /images
+        // We need to strip /api to get the server root
+        const serverRoot = API_BASE_URL.replace(/\/api$/, '');
+        setImageUrl(`${serverRoot}${prompt}`);
         setLoading(false);
         return;
       }

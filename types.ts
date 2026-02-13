@@ -6,7 +6,9 @@ export enum View {
   PROFILE = 'profile',
   CART = 'cart',
   CHECKOUT = 'checkout',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
+  ADMIN_APPLY = 'admin_apply',
+  SUPER_ADMIN = 'super_admin'
 }
 
 export interface ProductVariant {
@@ -18,6 +20,7 @@ export interface ProductVariant {
 
 export interface Product {
   id: string;
+  group_id: string;
   name: string;
   description: string;
   category: 'regular' | 'super' | 'overnight' | 'liner';
@@ -60,6 +63,7 @@ export interface UserProfile {
   name: string;
   email: string;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   age: string;
   town: string;
   country: string;
@@ -79,4 +83,16 @@ export interface Order {
   total: number;
   status: 'Processing' | 'Shipped' | 'Delivered';
   type: 'Drop-off' | 'Pick-up';
+}
+
+export interface AdminRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Denied';
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
 }

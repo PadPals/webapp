@@ -20,7 +20,7 @@ const Cart: React.FC<CartProps> = ({ items, onUpdateQuantity, onNavigateToChecko
           <i className="fas fa-shopping-bag"></i>
         </div>
         <h2 className="text-5xl font-black text-rose-950 mb-4 tracking-tighter">Bag is empty</h2>
-        <button 
+        <button
           onClick={() => window.dispatchEvent(new CustomEvent('setView', { detail: 'shop' }))}
           className="px-10 py-5 glass-button-primary text-white rounded-[2rem] font-black shadow-2xl uppercase tracking-widest"
         >
@@ -37,7 +37,11 @@ const Cart: React.FC<CartProps> = ({ items, onUpdateQuantity, onNavigateToChecko
         {items.map(item => (
           <div key={`${item.variantId}-${item.isSubscription}`} className="flex gap-8 p-8 glass-card rounded-[3rem] shadow-sm hover:shadow-xl hover:shadow-rose-100/10 transition-all group">
             <div className="w-32 h-32 overflow-hidden rounded-[2rem] border border-white/40 shadow-sm shrink-0">
-               <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              <img
+                src={item.image.startsWith('/images') ? `${import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:3000'}${item.image}` : item.image}
+                alt={item.name}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+              />
             </div>
             <div className="flex-grow flex flex-col justify-center">
               <div className="flex justify-between items-start mb-4">
