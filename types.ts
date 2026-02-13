@@ -79,10 +79,36 @@ export interface UserProfile {
 
 export interface Order {
   id: string;
-  date: string;
+  user_id: string;
+  created_at: string;
   total: number;
-  status: 'Processing' | 'Shipped' | 'Delivered';
+  status: 'Processing' | 'Shipped' | 'Delivered' | 'Filled' | 'Packaged' | 'Out for Delivery';
   type: 'Drop-off' | 'Pick-up';
+}
+
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  price: number;
+  is_subscription: boolean;
+}
+
+export interface OrderTrackingEntry {
+  id: string;
+  order_id: string;
+  status: string;
+  location: string;
+  timestamp: string;
+}
+
+export interface OrderWithUser extends Order {
+  userName: string;
+  userEmail: string;
+  itemCount: number;
+  productNames: string;
 }
 
 export interface AdminRequest {

@@ -351,14 +351,24 @@ const App: React.FC = () => {
               onUpdateProfile={(u) => setUserProfile(p => p ? { ...p, ...u } : { ...GUEST_PROFILE, ...u })}
               subscriptions={subscriptions}
               onUpdateSubscription={(id, s) => setSubscriptions(prev => prev.map(sub => sub.id === id ? { ...sub, status: s } : sub))}
-              onAdminClick={() => setCurrentView(userProfile?.isSuperAdmin ? View.SUPER_ADMIN : View.ADMIN)}
+              onAdminClick={() => setCurrentView(View.ADMIN)}
+              onSuperAdminClick={() => setCurrentView(View.SUPER_ADMIN)}
               isGuest={!userProfile || userProfile.id === 'guest'}
               onLogin={(user) => handleLogin(user)}
             />
           </div>
         );
       case View.ADMIN:
-        return <div className="pt-8 pb-20 animate-reveal"><AdminPanel products={products} onUpdateProduct={handleUpdateProduct} onAddProduct={handleAddProduct} /></div>;
+        return (
+          <div className="pt-8 pb-20 animate-reveal">
+            <AdminPanel
+              products={products}
+              onUpdateProduct={handleUpdateProduct}
+              onAddProduct={handleAddProduct}
+              userProfile={userProfile}
+            />
+          </div>
+        );
       case View.ADMIN_APPLY:
         return (
           <div className="pt-8 pb-20 animate-reveal">
@@ -373,7 +383,7 @@ const App: React.FC = () => {
         return (
           <div className="pt-8 pb-20 animate-reveal">
             <SuperAdminPanel
-              userId={userProfile?.id || ''}
+              userProfile={userProfile}
               products={products}
               onUpdateProduct={handleUpdateProduct}
               onAddProduct={handleAddProduct}

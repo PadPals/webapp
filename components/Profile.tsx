@@ -14,6 +14,7 @@ interface ProfileProps {
     subscriptions: Subscription[];
     onUpdateSubscription: (id: string, status: Subscription['status']) => void;
     onAdminClick: () => void;
+    onSuperAdminClick: () => void;
     isGuest: boolean;
     onLogin: (user: any) => void;
 }
@@ -24,6 +25,7 @@ const Profile: React.FC<ProfileProps> = ({
     subscriptions,
     onUpdateSubscription,
     onAdminClick,
+    onSuperAdminClick,
     isGuest,
     onLogin
 }) => {
@@ -245,7 +247,39 @@ const Profile: React.FC<ProfileProps> = ({
                                             <input value={userProfile.isStudent ? userProfile.university : userProfile.address} onChange={(e) => onUpdateProfile(userProfile.isStudent ? { university: e.target.value } : { address: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-white/60 border border-rose-50 text-sm font-bold text-rose-950" />
                                         </div>
                                     </div>
-                                    <div className="mt-6 flex justify-end">
+                                    <div className="mt-6 flex flex-wrap gap-4 justify-between items-center">
+                                        <div className="flex gap-4">
+                                            {!isGuest && (userProfile.isAdmin || userProfile.isSuperAdmin) && (
+                                                <button
+                                                    onClick={onAdminClick}
+                                                    className="px-6 py-3 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 transition-colors shadow-lg shadow-rose-200"
+                                                >
+                                                    <i className="fas fa-tasks mr-2"></i>
+                                                    Manage Products
+                                                </button>
+                                            )}
+                                            {!isGuest && userProfile.isSuperAdmin && (
+                                                <button
+                                                    onClick={onSuperAdminClick}
+                                                    className="px-6 py-3 bg-rose-950 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-800 transition-colors shadow-lg"
+                                                >
+                                                    <i className="fas fa-user-shield mr-2"></i>
+                                                    Manage Requests
+                                                </button>
+                                            )}
+                                            {!isGuest && !userProfile.isAdmin && !userProfile.isSuperAdmin && (
+                                                <button
+                                                    onClick={() => {
+                                                        const event = new CustomEvent('setView', { detail: 'admin_apply' });
+                                                        window.dispatchEvent(event);
+                                                    }}
+                                                    className="px-6 py-3 bg-white border border-rose-200 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-colors"
+                                                >
+                                                    <i className="fas fa-plus-circle mr-2"></i>
+                                                    Apply for Admin
+                                                </button>
+                                            )}
+                                        </div>
                                         <button onClick={handleUpdate} className="px-6 py-3 bg-rose-100 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-200 transition-colors">Update Details</button>
                                     </div>
                                 </div>

@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { UserProfile, Order } from '../types';
 
 interface OrderTrackingProps {
@@ -8,26 +9,48 @@ interface OrderTrackingProps {
 }
 
 const OrderTracking: React.FC<OrderTrackingProps> = ({ order, onClose }) => {
-    // Mock tracking data for now, similar to mobile implementation
-    // In a real app, this would come from an API endpoint like /api/orders/:id/tracking
-    const steps = [
-        { title: 'Order Filled', icon: 'fa-clipboard-check', date: new Date(order.created_at).toLocaleString() },
-        { title: 'Processed', icon: 'fa-cog', date: new Date(new Date(order.created_at).getTime() + 3600000).toLocaleString() }, // +1 hour
-        { title: 'Packaged', icon: 'fa-box', date: order.status !== 'Processing' ? new Date(new Date(order.created_at).getTime() + 7200000).toLocaleString() : null }, // +2 hours
-        { title: 'Out for Delivery', icon: 'fa-bicycle', date: null },
-        { title: 'Delivered', icon: 'fa-check-circle', date: null },
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const [tracking, setTracking] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchTracking();
+    }, [order.id]);
+
+    const fetchTracking = async () => {
+        try {
+            const { data } = await axios.get(`${API_BASE_URL}/orders/${order.id}/tracking`);
+            setTracking(data);
+        } catch (err) {
+            console.error('Error fetching tracking:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Major stages that map to our icons/timeline
+    const stages = [
+        { key: 'Filled', title: 'Order Filled', icon: 'fa-clipboard-check' },
+        { key: 'Processed', title: 'Processed', icon: 'fa-cog' },
+        { key: 'Packaged', title: 'Packaged', icon: 'fa-box' },
+        { key: 'Out for Delivery', title: 'Out for Delivery', icon: 'fa-bicycle' },
+        { key: 'Delivered', title: 'Delivered', icon: 'fa-check-circle' },
     ];
 
-    /* 
-       Determine current step index based on order status.
-       Mappings:
-       Processing -> Index 1 (Processed) - Assuming it's filled & processed
-       Shipped -> Index 3 (Out for Delivery)
-       Delivered -> Index 4 (Delivered)
-    */
-    let currentStepIndex = 1;
-    if (order.status === 'Shipped') currentStepIndex = 3;
-    if (order.status === 'Delivered') currentStepIndex = 4;
+    // Find the current status in the tracking history
+    const currentStatus = tracking.length > 0 ? tracking[tracking.length - 1].status : order.status;
+    const currentStepIndex = stages.findIndex(s => s.key === currentStatus);
+
+    // For the timeline, we'll use the tracking entries we actually have
+    // but keep the skeleton of all stages if we want to show progress
+    const displaySteps = stages.map((stage, index) => {
+        const foundEntry = tracking.find(t => t.status === stage.key);
+        return {
+            ...stage,
+            date: foundEntry ? new Date(foundEntry.timestamp).toLocaleString() : null,
+            isCompleted: index <= currentStepIndex || !!foundEntry
+        };
+    });
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-fade-in">
@@ -53,12 +76,11 @@ const OrderTracking: React.FC<OrderTrackingProps> = ({ order, onClose }) => {
                     <div className="absolute left-[27px] top-4 bottom-4 w-0.5 bg-gray-100 -z-10"></div>
                     <div
                         className="absolute left-[27px] top-4 w-0.5 bg-rose-500 -z-10 transition-all duration-1000 ease-out"
-                        style={{ height: `${(currentStepIndex / (steps.length - 1)) * 85}%` }}
+                        style={{ height: `${(currentStepIndex / (stages.length - 1)) * 85}%` }}
                     ></div>
 
-                    {steps.map((step, index) => {
-                        const isCompleted = index <= currentStepIndex;
-                        const isCurrent = index === currentStepIndex;
+                    {displaySteps.map((step, index) => {
+                        const isCompleted = step.isCompleted;
 
                         return (
                             <div key={index} className={`flex gap-6 items-center ${isCompleted ? 'opacity-100' : 'opacity-40'}`}>

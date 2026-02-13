@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Product, ProductVariant, View } from '../types';
-
+import { Product, ProductVariant, View, UserProfile } from '../types';
+import OrderManagement from './OrderManagement';
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -10,9 +10,11 @@ interface AdminPanelProps {
   products: Product[];
   onUpdateProduct: (product: Product) => void;
   onAddProduct: (product: Product) => void;
+  userProfile: UserProfile;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ products, onUpdateProduct, onAddProduct }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ products, onUpdateProduct, onAddProduct, userProfile }) => {
+  const [activeSection, setActiveSection] = useState<'inventory' | 'orders'>('inventory');
   const [editingId, setEditingId] = useState<string | null>(products[0]?.id || null);
 
   // Template for new product
@@ -143,39 +145,65 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, onUpdateProduct, onAd
 
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
-        <div className="w-full md:w-64 space-y-4">
-          <h3 className="text-xl font-black text-rose-950 mb-6 uppercase tracking-widest text-xs">Inventory</h3>
-          <button
-            onClick={() => {
-              setEditingId('new');
-              setNewProductState(NEW_PRODUCT_TEMPLATE);
-            }}
-            className={`w-full text-left p-4 rounded-2xl font-bold text-sm transition-all border mb-4 flex items-center justify-between ${editingId === 'new'
-              ? 'bg-rose-500 text-white shadow-lg border-rose-600'
-              : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
-              }`}
-          >
-            <span><i className="fas fa-plus mr-2"></i> Create New Product</span>
-          </button>
-          <div className="space-y-2">
-            {products.map(p => (
+        <div className="w-full md:w-80 space-y-8">
+          <div>
+            <h3 className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-6 ml-4">Command Center</h3>
+            <div className="space-y-2">
               <button
-                key={p.id}
-                onClick={() => setEditingId(p.id)}
-                className={`w-full text-left p-4 rounded-2xl font-bold text-sm transition-all border ${editingId === p.id
-                  ? 'bg-rose-500 text-white shadow-lg border-rose-600'
-                  : 'bg-white/40 text-gray-500 border-white/60 hover:bg-white/60'
+                onClick={() => setActiveSection('inventory')}
+                className={`w-full flex items-center gap-4 p-5 rounded-3xl font-black transition-all text-left ${activeSection === 'inventory' ? 'bg-rose-500 text-white shadow-xl shadow-rose-200' : 'text-rose-950/60 hover:bg-rose-50'}`}
+              >
+                <i className="fas fa-boxes text-lg"></i>
+                Inventory
+              </button>
+              <button
+                onClick={() => setActiveSection('orders')}
+                className={`w-full flex items-center gap-4 p-5 rounded-3xl font-black transition-all text-left ${activeSection === 'orders' ? 'bg-rose-500 text-white shadow-xl shadow-rose-200' : 'text-rose-950/60 hover:bg-rose-50'}`}
+              >
+                <i className="fas fa-shopping-cart text-lg"></i>
+                Order Management
+              </button>
+            </div>
+          </div>
+
+          {activeSection === 'inventory' && (
+            <div className="animate-reveal">
+              <h3 className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-6 ml-4">Quick Links</h3>
+              <button
+                onClick={() => {
+                  setEditingId('new');
+                  setNewProductState(NEW_PRODUCT_TEMPLATE);
+                }}
+                className={`w-full text-left p-5 rounded-3xl font-black text-sm transition-all border mb-6 flex items-center justify-between ${editingId === 'new'
+                  ? 'bg-rose-600 text-white shadow-lg'
+                  : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'
                   }`}
               >
-                {p.name}
+                <span><i className="fas fa-plus mr-3"></i> Create New</span>
               </button>
-            ))}
-          </div>
+              <div className="space-y-2">
+                {products.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => setEditingId(p.id)}
+                    className={`w-full text-left p-4 rounded-2xl font-bold text-xs transition-all border ${editingId === p.id && editingId !== 'new'
+                      ? 'bg-rose-50 text-rose-600 border-rose-200'
+                      : 'bg-white/40 text-gray-500 border-white/60 hover:bg-white/60'
+                      }`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Editor Area */}
-        <div className="flex-grow glass-card rounded-[3.5rem] p-10 shadow-2xl">
-          {!displayProduct ? (
+        {/* Editor Area / Content Area */}
+        <div className="flex-grow">
+          {activeSection === 'orders' ? (
+            userProfile ? <OrderManagement adminId={userProfile.id} /> : <div className="h-full flex items-center justify-center text-gray-400 font-medium">Loading user profile...</div>
+          ) : !displayProduct ? (
             <div className="h-full flex items-center justify-center text-gray-400 font-medium">Select a product to edit or create a new one</div>
           ) : (
             <div className="space-y-10">
